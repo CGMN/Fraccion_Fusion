@@ -1,54 +1,70 @@
-
-
+#python36
 import pandas as pd
 import glob
-interesting_files = glob.glob("*.csv")
+import tkinter.filedialog, re
+import time
+import os
+import os.path
 
-#para poder leer los archivos con las columnas necesarias y guardarlos en otra lista con las modificaciones necesarias
+starttime =  time.time()
+
+#para solicitar la carpeta donde estan los archivos
+root = tkinter.Tk()
+root.withdraw()
+file_path = tkinter.filedialog.askdirectory()
+
+#listado con nombres de archivos csv de la carpeta
 print("Leyendo los archivos")
-archivos_modificados=[]
+interesting_files=[]
+os.chdir(file_path)
+for file in glob.glob("*.csv"):
+    interesting_files.append(file)
+
+print("Eliminando los archivos sin datos")
 for i in interesting_files:
-	archivos_modificados.append(pd.read_csv(i,encoding='latin1', usecols=[0,1,2,3,4,5,6,7]))
+    if (pd.read_csv(i,encoding='latin1', usecols=[0,1,2,3,4,5,6,7])).size==0:
+        os.remove(i)
 
-print(len(archivos_modificados[0]))
-print(len(archivos_modificados[1]))
-print(len(archivos_modificados[2]))
+print('Borrando consolidado anterior')
+if "output.csv" in interesting_files:
+    os.remove("output.csv")
 
-#for i in range(0, len(archivos_modificados)):
-#	if len(archivos_modificados[i])==1:
-#		archivos_modificados.remove(archivos_modificados[i])
+#nuevo listado con nombre de los archivos csv que quedaron
+nombre_archivos=[]
+os.chdir(file_path)
+for file in glob.glob("*.csv"):
+    nombre_archivos.append(file)
+
+#para poder leer los archivos con las columnas necesarias y guardarlos en otra lista como dataframe con las modificaciones necesarias
+archivos_modificados=[]
+for i in nombre_archivos:
+    archivos_modificados.append(pd.read_csv(i,encoding='latin1', usecols=[0,1,2,3,4,5,6,7]))
 
 #lista de codigos
 print("Extrayendo los codigos de los nombres")
 codigos=[]
-for i in range(0,len(interesting_files)):
-	codigos.append(str(interesting_files[i][0:4]))
+for i in nombre_archivos:
+	codigos.append(str(i[0:3]))
 
-#Para escribir los codigos dentro del archivo
 print("Escribiendo los codigos dentro de los archivos")
 for j in range(0,len(archivos_modificados)):
 	archivos_modificados[j].loc[0,"SERVICIO"]=""
 	for i in range(0, len(archivos_modificados[j])):
 		archivos_modificados[j].loc[i,"SERVICIO"]=codigos[j]
 
-#revisar que los archivos tengan datos y no solo las cabeceras
-
-
-
-#quitar los signos de guion bajo
-
-
-
-#para guardar los archivos modificados
 print("Guardando los archivos modificados")
-for i in range(0,len(interesting_files)):
-	archivos_modificados[i].to_csv(str(interesting_files[i]),encoding='utf-8', index=False)
+for i in range(0,len(archivos_modificados)):
+	archivos_modificados[i].to_csv(str("archivo"+str(i)+".csv"),encoding='latin1', index=False)
 
-
+print("Consolidando")
 df_list = []
-for filename in interesting_files:
-    df_list.append(pd.read_csv(filename))
+for i in range(0,len(archivos_modificados)):
+	df_list.append(archivos_modificados[i])
 
 full_df = pd.concat(df_list)
 
 full_df.to_csv('output.csv', index=False)
+
+print ("Archivo guardado")
+
+input()
